@@ -12,6 +12,8 @@ import { InputGroupAddon } from "./ui/input-group";
 import { getAutocompleteSuggestions, type AutocompleteItem } from "@/lib/autocomplete";
 import { useMainStore } from "@/store/main-store";
 import { ImageWeserv } from "@letruxux/weserv-js";
+import { HiOutlineClock, HiX } from "react-icons/hi";
+import { Button } from "./ui/button";
 
 export default function SearchBar() {
   const [open, setOpen] = useState(false);
@@ -34,11 +36,17 @@ export default function SearchBar() {
     return () => clearTimeout(timeout);
   }, [query]);
 
-  const { currentSearchEngine, cycleSearchEngine } = useMainStore();
-  console.log(currentSearchEngine);
+  const {
+    currentSearchEngine,
+    cycleSearchEngine,
+    searchHistory,
+    addToSearchHistory,
+    removeFromSearchHistory,
+  } = useMainStore();
 
   const handleSelect = (value: string | null) => {
     if (!value) return;
+    addToSearchHistory(value);
     window.open(
       currentSearchEngine.urlFormatter.replace("{{QUERY}}", encodeURIComponent(value)),
       "_blank",
@@ -48,9 +56,8 @@ export default function SearchBar() {
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="w-full h-full flex items-center justify-center pr-8">
       <Combobox open={open} onOpenChange={setOpen} onValueChange={handleSelect}>
-        <div className="size-4"></div>
         <ComboboxInput
           showTrigger={false}
           placeholder={`search on ${currentSearchEngine.name.toLowerCase()}!`}
@@ -84,6 +91,28 @@ export default function SearchBar() {
           <ComboboxList className="max-w-xl w-full">
             {loading ? (
               <ComboboxItem disabled>loading...</ComboboxItem>
+            ) : query.trim().length === 0 && searchHistory.length > 0 ? (
+              searchHistory.map((item) => (
+                <ComboboxItem key={item} value={item} className="group">
+                  <div className="flex items-center gap-2 w-full h-6 pl-1">
+                    <span className="text-sm text-muted-foreground">
+                      <HiOutlineClock className="h-4 w-4" />
+                    </span>
+                    <span className="font-bold">{item}</span>
+                    <div className="grow"></div>
+                    <Button variant="ghost">
+                      <HiX
+                        className="h-4 w-4 text-muted-foreground"
+                        onClick={(e) => {
+                          removeFromSearchHistory(item);
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
+                      />
+                    </Button>
+                  </div>
+                </ComboboxItem>
+              ))
             ) : (
               items.map((item) => (
                 <ComboboxItem key={item.text} value={item.text}>

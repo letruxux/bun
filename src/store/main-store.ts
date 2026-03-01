@@ -38,6 +38,11 @@ interface MainState {
   currentSearchEngine: SearchEngine;
   setCurrentSearchEngine: (engine: SearchEngine) => void;
   cycleSearchEngine: () => void;
+
+  searchHistory: string[];
+  addToSearchHistory: (query: string) => void;
+  removeFromSearchHistory: (query: string) => void;
+  clearSearchHistory: () => void;
 }
 
 const DEFAULT_SEARCH_ENGINES = [
@@ -142,6 +147,20 @@ export const useMainStore = create<MainState>()(
                 state.searchEngines.length
             ],
         })),
+
+      searchHistory: [],
+      addToSearchHistory: (query: string) =>
+        set((state) => ({
+          searchHistory: [
+            query,
+            ...state.searchHistory.filter((q) => q !== query),
+          ].slice(0, 10),
+        })),
+      removeFromSearchHistory: (query: string) =>
+        set((state) => ({
+          searchHistory: state.searchHistory.filter((q) => q !== query),
+        })),
+      clearSearchHistory: () => set({ searchHistory: [] }),
     }),
     {
       name: "storage",
