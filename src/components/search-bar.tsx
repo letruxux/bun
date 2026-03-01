@@ -56,7 +56,12 @@ export default function SearchBar() {
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center pr-8">
+    <div className="w-full h-full flex items-center pr-8 flex-col mt-48">
+      <img
+        src="https://i.ibb.co/gMrzVFs9/image.png"
+        alt="bun!"
+        className="w-[50%] mb-8"
+      />
       <Combobox open={open} onOpenChange={setOpen} onValueChange={handleSelect}>
         <ComboboxInput
           showTrigger={false}
