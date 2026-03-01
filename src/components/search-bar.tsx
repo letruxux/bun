@@ -7,10 +7,11 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/components/ui/combobox";
-import { useState, useEffect, type ChangeEvent, useMemo } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import { InputGroupAddon } from "./ui/input-group";
-import { ImageWeserv } from "@letruxux/weserv-js";
 import { getAutocompleteSuggestions, type AutocompleteItem } from "@/lib/autocomplete";
+import { useMainStore } from "@/store/main-store";
+import { ImageWeserv } from "@letruxux/weserv-js";
 
 export default function SearchBar() {
   const [open, setOpen] = useState(false);
@@ -33,26 +34,15 @@ export default function SearchBar() {
     return () => clearTimeout(timeout);
   }, [query]);
 
-  const [selectedSearchEngineIndex, setSelectedSearchEngineIndex] = useState(0);
-  const [searchEngines] = useState([
-    "https://google.com",
-    "https://duckduckgo.com",
-    "https://bing.com",
-    "https://search.brave.com",
-  ]);
-
-  const currentSearchEngineUrl = useMemo(
-    () => searchEngines[selectedSearchEngineIndex] ?? searchEngines[0],
-    [selectedSearchEngineIndex, searchEngines],
-  );
-
-  function cycleSearchEngine() {
-    setSelectedSearchEngineIndex((i) => (i + 1) % searchEngines.length);
-  }
+  const { currentSearchEngine, cycleSearchEngine } = useMainStore();
+  console.log(currentSearchEngine);
 
   const handleSelect = (value: string | null) => {
     if (!value) return;
-    window.open(`https://www.google.com/search?q=${encodeURIComponent(value)}`, "_blank");
+    window.open(
+      currentSearchEngine.urlFormatter.replace("{{QUERY}}", encodeURIComponent(value)),
+      "_blank",
+    );
     setOpen(false);
     setQuery("");
   };
@@ -63,7 +53,7 @@ export default function SearchBar() {
         <div className="size-4"></div>
         <ComboboxInput
           showTrigger={false}
-          placeholder="search!"
+          placeholder={`search on ${currentSearchEngine.name.toLowerCase()}!`}
           value={query}
           onChange={(e: ChangeEvent<HTMLInputElement>) => {
             setQuery(e.target.value);
@@ -85,7 +75,7 @@ export default function SearchBar() {
         >
           <InputGroupAddon>
             <img
-              src={new ImageWeserv(currentSearchEngineUrl + "/favicon.ico").toString()}
+              src={new ImageWeserv(currentSearchEngine.iconUrl).toString()}
               className="h-4 w-4 text-muted-foreground"
             />
           </InputGroupAddon>
@@ -93,7 +83,7 @@ export default function SearchBar() {
         <ComboboxContent className="bg-transparent outline-none -translate-x-5">
           <ComboboxList className="max-w-xl w-full">
             {loading ? (
-              <ComboboxItem disabled>Loading...</ComboboxItem>
+              <ComboboxItem disabled>loading...</ComboboxItem>
             ) : (
               items.map((item) => (
                 <ComboboxItem key={item.text} value={item.text}>

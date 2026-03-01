@@ -20,9 +20,9 @@ import {
   ContextMenuTrigger,
 } from "./ui/context-menu";
 
-function urlToImg(url: string, host2imgMap: Map<string, string>) {
+function urlToImg(url: string, host2imgRec: Record<string, string>) {
   return (
-    host2imgMap.get(new URL(url).host) ??
+    host2imgRec[new URL(url).host] ??
     `${new URL(url).origin}/favicon.ico?v=${Date.now().toString()}`
   );
 }
