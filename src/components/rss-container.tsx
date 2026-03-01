@@ -32,7 +32,7 @@ function Article({
 }: {
   item: Awaited<ReturnType<typeof parseFeed>>["items"][number];
 }) {
-  const { settings } = useMainStore();
+  const { rssSettings: settings } = useMainStore();
   if (!item.url) {
     return null;
   }

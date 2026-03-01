@@ -16,8 +16,8 @@ type RSSSettings = z.infer<typeof RSSSettingsSchema>;
 type ChangeableSettings = Exclude<Exclude<RSSSettings, "feeds">, "explicitAvatars">;
 
 interface MainState {
-  settings: RSSSettings;
-  updateSettings: (settings: ChangeableSettings) => void;
+  rssSettings: RSSSettings;
+  updateRSSSettings: (settings: ChangeableSettings) => void;
   addFeed: (feed: string) => void;
   removeFeed: (feed: string) => void;
 
@@ -28,43 +28,43 @@ interface MainState {
 export const useMainStore = create<MainState>()(
   persist(
     (set) => ({
-      settings: RSSSettingsSchema.parse({}),
-      updateSettings: (settings: ChangeableSettings) =>
+      rssSettings: RSSSettingsSchema.parse({}),
+      updateRSSSettings: (settings: ChangeableSettings) =>
         set((state) => ({
-          settings: {
-            ...state.settings,
+          rssSettings: {
+            ...state.rssSettings,
             ...settings,
           },
         })),
 
       addFeed: (feed: string) =>
         set((state) => ({
-          settings: {
-            ...state.settings,
-            feeds: [...state.settings.feeds, feed],
+          rssSettings: {
+            ...state.rssSettings,
+            feeds: [...state.rssSettings.feeds, feed],
           },
         })),
       removeFeed: (feed: string) =>
         set((state) => ({
-          settings: {
-            ...state.settings,
-            feeds: state.settings.feeds.filter((f) => f !== feed),
+          rssSettings: {
+            ...state.rssSettings,
+            feeds: state.rssSettings.feeds.filter((f) => f !== feed),
           },
         })),
 
       addExplicitAvatar: (host: string, url: string) =>
         set((state) => ({
-          settings: {
-            ...state.settings,
-            explicitAvatars: new Map([...state.settings.explicitAvatars, [host, url]]),
+          rssSettings: {
+            ...state.rssSettings,
+            explicitAvatars: new Map([...state.rssSettings.explicitAvatars, [host, url]]),
           },
         })),
       removeExplicitAvatar: (host: string) =>
         set((state) => ({
-          settings: {
-            ...state.settings,
+          rssSettings: {
+            ...state.rssSettings,
             explicitAvatars: new Map(
-              Array.from(state.settings.explicitAvatars).filter(([k]) => k !== host),
+              Array.from(state.rssSettings.explicitAvatars).filter(([k]) => k !== host),
             ),
           },
         })),
