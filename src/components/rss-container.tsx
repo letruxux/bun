@@ -6,8 +6,8 @@ import {
   HiOutlineEyeOff,
   HiOutlineFilter,
   HiOutlinePencilAlt,
+  HiPencilAlt,
 } from "react-icons/hi";
-import useSWR from "swr";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { parseFeed } from "@/lib/rss-parse";
 import { Button } from "./ui/button";
@@ -19,13 +19,17 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "./ui/context-menu";
-
-function urlToImg(url: string, host2imgRec: Record<string, string>) {
-  return (
-    host2imgRec[new URL(url).host] ??
-    `${new URL(url).origin}/favicon.ico?v=${Date.now().toString()}`
-  );
-}
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "./ui/checkbox";
+import { useFeeds } from "@/hooks/use-feeds";
+import { Loader2 } from "lucide-react";
+import { urlToImg } from "@/lib/utils";
 
 function Article({
   item,
@@ -101,51 +105,90 @@ function Article({
   );
 }
 
-/* 
-const HOST_TO_IMG = new Map([
-  ["kibty.town", "https://github.com/xyzeva.png"],
-  ["ud2.rip", "https://ud2.rip/icon.png"],
-]);
-*/
-
 export default function RSSContainer() {
-  const { data } = useSWR("https://blog.fluxer.app/rss/", parseFeed);
-  const { data: data2 } = useSWR("https://kibty.town/blog.rss", parseFeed);
-  const { data: data3 } = useSWR("https://vmfunc.re/rss.xml", parseFeed);
-
-  const allFeeds = useMemo(
-    () => [...(data?.items ?? []), ...(data2?.items ?? []), ...(data3?.items ?? [])],
-    [data, data2, data3],
-  );
+  const { rssSettings: settings, updateRSSSettings, setMode, mode } = useMainStore();
+  const { results: feeds, loading } = useFeeds(settings.feeds);
 
   const sortedFeeds = useMemo(
     () =>
-      allFeeds.sort(
+      feeds.sort(
         (a, b) =>
           new Date(b.pubDate ?? b.isoDate ?? new Date()).getTime() -
           new Date(a.pubDate ?? a.isoDate ?? new Date()).getTime(),
       ),
-    [allFeeds],
+    [feeds],
   );
 
   return (
-    <Card className="w-full max-w-full overflow-y-scroll px-5 pt-4 first:gap-y-4 lg:max-w-120 2xl:max-w-160 bg-background/20 backdrop-blur-xs">
-      <div className="mb-0 flex items-center gap-1 pb-0 text-2xl">
-        <span className="font-bold">your feeds</span>
-        <div className="flex-1" />
-        <Button className="ml-auto" size="icon-sm" variant="outline">
-          <HiOutlinePencilAlt className="h-4 w-4" />
-        </Button>
-        <Button className="ml-auto" size="icon-sm" variant="outline">
-          <HiOutlineFilter className="h-4 w-4" />
-        </Button>
-        <Button className="ml-auto" size="icon-sm" variant="outline">
-          <HiOutlineCog className="h-4 w-4" />
-        </Button>
-      </div>
-      {sortedFeeds.map((e) => (
-        <Article item={e} key={e.guid} />
-      ))}
-    </Card>
+    <>
+      <Card className="w-full max-w-full overflow-y-scroll px-5 pt-4 first:gap-y-4 lg:max-w-120 2xl:max-w-160 bg-background/20 backdrop-blur-xs">
+        <div className="mb-0 flex items-center gap-1 pb-0 text-2xl">
+          <span className="font-bold">your feeds</span>
+          <div className="flex-1" />
+          <Button
+            className="ml-auto"
+            size="icon-sm"
+            variant={mode === "search" ? "outline" : "secondary"}
+            onClick={() => setMode(mode === "search" ? "edit-feeds" : "search")}
+          >
+            {mode === "search" ? (
+              <HiOutlinePencilAlt className="h-4 w-4" />
+            ) : (
+              <HiPencilAlt className="h-4 w-4" />
+            )}
+          </Button>
+          <DropdownMenu modal>
+            <DropdownMenuTrigger asChild>
+              <Button className="ml-auto" size="icon-sm" variant="outline">
+                <HiOutlineFilter className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  className="flex"
+                  onClick={() => updateRSSSettings({ showImages: !settings.showImages })}
+                >
+                  <Checkbox checked={settings.showImages}></Checkbox> show images
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="flex"
+                  onClick={() =>
+                    updateRSSSettings({
+                      hidePostsWithNoDate: !settings.hidePostsWithNoDate,
+                    })
+                  }
+                >
+                  <Checkbox checked={settings.hidePostsWithNoDate}></Checkbox> hide posts
+                  with no date
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="flex"
+                  onClick={() =>
+                    updateRSSSettings({
+                      showArticleArrow: !settings.showArticleArrow,
+                    })
+                  }
+                >
+                  <Checkbox checked={settings.showArticleArrow}></Checkbox>
+                  show article arrow on hover
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button className="ml-auto" size="icon-sm" variant="outline">
+            <HiOutlineCog className="h-4 w-4" />
+          </Button>
+        </div>
+        {loading.size > 0 && (
+          <span className="text-center text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin inline" /> loading: {loading.size}
+          </span>
+        )}
+        {sortedFeeds.map((e) => (
+          <Article item={e} key={e.guid} />
+        ))}
+      </Card>
+    </>
   );
 }

@@ -13,7 +13,7 @@ const RSSSettingsSchema = z.object({
 
 type RSSSettings = z.infer<typeof RSSSettingsSchema>;
 
-type ChangeableSettings = Exclude<Exclude<RSSSettings, "feeds">, "explicitAvatars">;
+type ChangeableSettings = Partial<Omit<Omit<RSSSettings, "feeds">, "explicitAvatars">>;
 
 const SearchEngineSchema = z.object({
   name: z.string(),
@@ -43,6 +43,9 @@ interface MainState {
   addToSearchHistory: (query: string) => void;
   removeFromSearchHistory: (query: string) => void;
   clearSearchHistory: () => void;
+
+  mode: "search" | "edit-feeds";
+  setMode: (mode: "search" | "edit-feeds") => void;
 }
 
 const DEFAULT_SEARCH_ENGINES = [
@@ -151,16 +154,19 @@ export const useMainStore = create<MainState>()(
       searchHistory: [],
       addToSearchHistory: (query: string) =>
         set((state) => ({
-          searchHistory: [
-            query,
-            ...state.searchHistory.filter((q) => q !== query),
-          ].slice(0, 10),
+          searchHistory: [query, ...state.searchHistory.filter((q) => q !== query)].slice(
+            0,
+            10,
+          ),
         })),
       removeFromSearchHistory: (query: string) =>
         set((state) => ({
           searchHistory: state.searchHistory.filter((q) => q !== query),
         })),
       clearSearchHistory: () => set({ searchHistory: [] }),
+
+      mode: "search",
+      setMode: (mode: "search" | "edit-feeds") => set({ mode }),
     }),
     {
       name: "storage",

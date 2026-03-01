@@ -1,4 +1,5 @@
 import Parser from "rss-parser";
+import { isUrl } from "./utils";
 
 const CORSPROXY_BASE = "https://corsproxy.io/?url=";
 
@@ -14,20 +15,13 @@ interface CustomItem {
   }[];
 }
 
-function isUrl(str: string) {
-  try {
-    new URL(str);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 const parser: Parser<CustomFeed, CustomItem> = new Parser({
   customFields: {
     item: [["media:content", "mediaContent", { keepArray: true }]],
   },
 });
+
+export type ParsedFeed = Awaited<ReturnType<typeof parseFeed>>;
 
 export async function parseFeed(url: string) {
   const resp = await fetch(`${CORSPROXY_BASE}${encodeURIComponent(url)}`);

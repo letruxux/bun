@@ -2,9 +2,10 @@ import RSSContainer from "@/components/rss-container";
 import { cn } from "./lib/utils";
 import { useMainStore } from "./store/main-store";
 import SearchBar from "./components/search-bar";
+import FeedSettings from "./components/feed-settings";
 
 export default function Page() {
-  const { rssSettings: settings } = useMainStore();
+  const { rssSettings: settings, mode } = useMainStore();
 
   return (
     <div
@@ -13,7 +14,7 @@ export default function Page() {
         settings.bgUrl && `bg-[url(${JSON.stringify(settings.bgUrl)})]`,
       )}
     >
-      <SearchBar />
+      {mode === "search" ? <SearchBar /> : <FeedSettings />}
 
       <RSSContainer />
     </div>
