@@ -1,8 +1,14 @@
+import { lazy, Suspense } from "react";
 import RSSContainer from "@/components/rss-container";
 import { cn } from "./lib/utils";
 import { useMainStore } from "./store/main-store";
-import SearchBar from "./components/search-bar";
-import FeedSettings from "./components/feed-settings";
+
+const SearchBar = lazy(() => import("./components/search-bar"));
+const FeedSettings = lazy(() => import("./components/feed-settings"));
+
+function LoadingFallback() {
+  return null;
+}
 
 export default function Page() {
   const { rssSettings: settings, mode } = useMainStore();
@@ -14,7 +20,9 @@ export default function Page() {
         settings.bgUrl && `bg-[url(${JSON.stringify(settings.bgUrl)})]`,
       )}
     >
-      {mode === "search" ? <SearchBar /> : <FeedSettings />}
+      <Suspense fallback={<LoadingFallback />}>
+        {mode === "search" ? <SearchBar /> : <FeedSettings />}
+      </Suspense>
 
       <RSSContainer />
     </div>

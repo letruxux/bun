@@ -29,7 +29,9 @@ import {
 import { Checkbox } from "./ui/checkbox";
 import { useFeeds } from "@/hooks/use-feeds";
 import { Loader2 } from "lucide-react";
-import { urlToImg } from "@/lib/utils";
+import { dedupe, urlToImg } from "@/lib/utils";
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
 
 function Article({
   item,
@@ -62,6 +64,7 @@ function Article({
                 <span className="">{item.title}</span>
                 <span className="mt-0.5 flex truncate font-normal text-sm">
                   {dayjs(item.pubDate).format("DD/MM/YYYY")}
+                  <code className="ml-1">({dayjs(item.pubDate).fromNow()})</code>
                   <span className="mx-1 text-gray-400">•</span>
                   <span className="flex items-center">
                     <img
@@ -111,10 +114,12 @@ export default function RSSContainer() {
 
   const sortedFeeds = useMemo(
     () =>
-      feeds.sort(
-        (a, b) =>
-          new Date(b.pubDate ?? b.isoDate ?? new Date()).getTime() -
-          new Date(a.pubDate ?? a.isoDate ?? new Date()).getTime(),
+      dedupe(
+        feeds.sort(
+          (a, b) =>
+            new Date(b.pubDate ?? b.isoDate ?? new Date()).getTime() -
+            new Date(a.pubDate ?? a.isoDate ?? new Date()).getTime(),
+        ),
       ),
     [feeds],
   );
@@ -186,7 +191,7 @@ export default function RSSContainer() {
           </span>
         )}
         {sortedFeeds.map((e) => (
-          <Article item={e} key={e.guid} />
+          <Article item={e} key={e.superUniqueId} />
         ))}
       </Card>
     </>
