@@ -1,7 +1,7 @@
 import type Parser from "rss-parser";
 import { isUrl } from "./utils";
 
-const CORSPROXY_BASE = "https://cors.ltrx.lol/?url=";
+const CORSPROXY_BASE = "https://api.cors.lol/?url=";
 
 type CustomFeed = object;
 
