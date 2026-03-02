@@ -7,7 +7,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/components/ui/combobox";
-import { useState, useEffect, type ChangeEvent } from "react";
+import { useState, useEffect, type ChangeEvent, useRef } from "react";
 import { InputGroupAddon } from "./ui/input-group";
 import { getAutocompleteSuggestions, type AutocompleteItem } from "@/lib/autocomplete";
 import { useMainStore } from "@/store/main-store";
@@ -20,6 +20,13 @@ export default function SearchBar() {
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<AutocompleteItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const barRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (barRef.current) {
+      barRef.current.focus();
+    }
+  }, [barRef]);
 
   useEffect(() => {
     const timeout = setTimeout(async () => {
@@ -64,6 +71,7 @@ export default function SearchBar() {
       />
       <Combobox open={open} onOpenChange={setOpen} onValueChange={handleSelect}>
         <ComboboxInput
+          ref={barRef}
           showTrigger={false}
           placeholder={`search on ${currentSearchEngine.name.toLowerCase()}!`}
           value={query}
