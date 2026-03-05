@@ -1,30 +1,55 @@
 import { parseFeed, type ParsedFeed } from "@/lib/rss-parse";
 import { useEffect, useState } from "react";
+import type { Feed } from "@/store/main-store";
 
-export function useFeeds(urls: string[]) {
+function applyCustomExpression(
+  items: ParsedFeed["items"][number][],
+  expression: string,
+): ParsedFeed["items"][number][] {
+  if (!expression) return items;
+
+  try {
+    return items.map((item) => {
+      try {
+        const itemCopy = { ...item };
+        const fn = new Function("item", expression);
+        return fn(itemCopy) ?? itemCopy;
+      } catch {
+        return item;
+      }
+    });
+  } catch {
+    return items;
+  }
+}
+
+export function useFeeds(feeds: Feed[]) {
   const [results, setResults] = useState<ParsedFeed["items"][number][]>([]);
   const [loading, setLoading] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setResults([]);
-    setLoading(new Set(urls));
+    setLoading(new Set(feeds.map((f) => f.url)));
 
-    urls.forEach((url) => {
-      parseFeed(url)
-        .then((feed) => {
-          setResults((r) => [...r, ...feed.items]);
+    feeds.forEach((feed) => {
+      parseFeed(feed.url, feed.useCorsProxy)
+        .then((parsed) => {
+          const transformed = feed.customExpression
+            ? applyCustomExpression(parsed.items, feed.customExpression)
+            : parsed.items;
+          setResults((r) => [...r, ...transformed]);
         })
         .catch(console.error)
         .finally(() => {
           setLoading((prev) => {
             const next = new Set(prev);
-            next.delete(url);
+            next.delete(feed.url);
             return next;
           });
         });
     });
-  }, [urls]);
+  }, [feeds]);
 
   return {
     results,

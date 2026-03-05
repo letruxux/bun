@@ -2,10 +2,19 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import z from "zod";
 
+const FeedSchema = z.object({
+  url: z.string(),
+  color: z.string().optional(),
+  useCorsProxy: z.boolean().default(true),
+  customExpression: z.string().optional(),
+});
+
+type Feed = z.infer<typeof FeedSchema>;
+
 const RSSSettingsSchema = z.object({
   showImages: z.boolean().default(true),
   hidePostsWithNoDate: z.boolean().default(false),
-  feeds: z.array(z.string()).default([]),
+  feeds: z.array(FeedSchema).default([]),
   explicitAvatars: z.record(z.hostname(), z.url()).default({}),
   bgUrl: z.url().optional(),
   showArticleArrow: z.boolean().default(true),
@@ -13,6 +22,7 @@ const RSSSettingsSchema = z.object({
 });
 
 type RSSSettings = z.infer<typeof RSSSettingsSchema>;
+export type { Feed };
 
 type ChangeableSettings = Partial<Omit<Omit<RSSSettings, "feeds">, "explicitAvatars">>;
 
@@ -27,8 +37,9 @@ type SearchEngine = z.infer<typeof SearchEngineSchema>;
 interface MainState {
   rssSettings: RSSSettings;
   updateRSSSettings: (settings: ChangeableSettings) => void;
-  addFeed: (feed: string) => void;
-  removeFeed: (feed: string) => void;
+  addFeed: (feed: Feed) => void;
+  removeFeed: (url: string) => void;
+  updateFeed: (url: string, updates: Partial<Feed>) => void;
   addExplicitAvatar: (host: string, url: string) => void;
   removeExplicitAvatar: (host: string) => void;
   addHiddenPostId: (id: string) => void;
@@ -107,7 +118,7 @@ export const useMainStore = create<MainState>()(
           }),
         })),
 
-      addFeed: (feed: string) =>
+      addFeed: (feed: Feed) =>
         set((state) => ({
           rssSettings: parseRSS({
             ...state.rssSettings,
@@ -115,11 +126,21 @@ export const useMainStore = create<MainState>()(
           }),
         })),
 
-      removeFeed: (feed: string) =>
+      removeFeed: (url: string) =>
         set((state) => ({
           rssSettings: parseRSS({
             ...state.rssSettings,
-            feeds: state.rssSettings.feeds.filter((f) => f !== feed),
+            feeds: state.rssSettings.feeds.filter((f) => f.url !== url),
+          }),
+        })),
+
+      updateFeed: (url: string, updates: Partial<Feed>) =>
+        set((state) => ({
+          rssSettings: parseRSS({
+            ...state.rssSettings,
+            feeds: state.rssSettings.feeds.map((f) =>
+              f.url === url ? { ...f, ...updates } : f,
+            ),
           }),
         })),
 

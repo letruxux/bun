@@ -29,7 +29,7 @@ import {
 import { Checkbox } from "./ui/checkbox";
 import { useFeeds } from "@/hooks/use-feeds";
 import { Loader2 } from "lucide-react";
-import { dedupe, urlToImg } from "@/lib/utils";
+import { cn, dedupe, urlToImg } from "@/lib/utils";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
@@ -38,16 +38,52 @@ function Article({
 }: {
   item: Awaited<ReturnType<typeof parseFeed>>["items"][number];
 }) {
-  const { rssSettings: settings, addHiddenPostId } = useMainStore();
+  const {
+    rssSettings: settings,
+    addHiddenPostId,
+    readArticleIds,
+    setArticleRead,
+  } = useMainStore();
+
+  const feed = useMemo(
+    () => settings.feeds.find((e) => e.url === item.feedUrl),
+    [settings.feeds, item.feedUrl],
+  );
+
   if (!item.url) {
     return null;
   }
 
   return (
-    <a data-guid={item.guid} href={item.url} rel="noreferrer" target="_blank">
+    <a
+      data-guid={item.guid}
+      href={item.url}
+      rel="noreferrer"
+      target="_blank"
+      onClick={() => {
+        setArticleRead(item.superUniqueId);
+      }}
+    >
       <ContextMenu>
         <ContextMenuTrigger>
-          <Card className="gap-y-0 overflow-x-hidden pt-0 font-bold text-x hover:scale-102 transition-transform duration-300 group relative overflow-hidden">
+          <Card
+            className={cn(
+              "gap-y-0 overflow-x-hidden pt-0 font-bold text-x hover:scale-102 transition-transform-opacity duration-300 group relative overflow-hidden",
+              {
+                "opacity-50 hover:opacity-90": readArticleIds.includes(
+                  item.superUniqueId,
+                ),
+              },
+            )}
+          >
+            {feed && (
+              <div
+                className="absolute bottom-0 right-0 w-full h-1"
+                style={{
+                  backgroundColor: feed.color || "transparent",
+                }}
+              />
+            )}
             <CardHeader className="mb-2 gap-y-0 space-y-1 px-0">
               {item.imageUrl && settings.showImages && (
                 <div className="aspect-video h-auto w-full">
@@ -110,7 +146,8 @@ function Article({
 
 export default function RSSContainer() {
   const { rssSettings: settings, updateRSSSettings, setMode, mode } = useMainStore();
-  const { results: feeds, loading } = useFeeds(settings.feeds);
+  const _feeds = useMemo(() => settings.feeds, [settings.feeds]);
+  const { results: feeds, loading } = useFeeds(_feeds);
 
   const sortedFeeds = useMemo(
     () =>
