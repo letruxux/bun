@@ -19,6 +19,7 @@ const RSSSettingsSchema = z.object({
 	bgUrl: z.url().optional(),
 	showArticleArrow: z.boolean().default(true),
 	hiddenPostIds: z.array(z.string()).default([]),
+	blockedDomains: z.array(z.string()).default([]),
 });
 
 type RSSSettings = z.infer<typeof RSSSettingsSchema>;
@@ -45,6 +46,8 @@ interface MainState {
 	addExplicitAvatar: (host: string, url: string) => void;
 	removeExplicitAvatar: (host: string) => void;
 	addHiddenPostId: (id: string) => void;
+	blockDomain: (domain: string) => void;
+	removeBlockedDomain: (domain: string) => void;
 
 	searchEngines: SearchEngine[];
 	addSearchEngine: (engine: SearchEngine) => void;
@@ -151,6 +154,27 @@ export const useMainStore = create<MainState>()(
 					rssSettings: parseRSS({
 						...state.rssSettings,
 						hiddenPostIds: [...state.rssSettings.hiddenPostIds, id],
+					}),
+				})),
+
+			blockDomain: (domain: string) =>
+				set((state) => ({
+					rssSettings: parseRSS({
+						...state.rssSettings,
+						blockedDomains: [
+							...state.rssSettings.blockedDomains.filter((d) => d !== domain),
+							domain,
+						],
+					}),
+				})),
+
+			removeBlockedDomain: (domain: string) =>
+				set((state) => ({
+					rssSettings: parseRSS({
+						...state.rssSettings,
+						blockedDomains: state.rssSettings.blockedDomains.filter(
+							(d) => d !== domain,
+						),
 					}),
 				})),
 
