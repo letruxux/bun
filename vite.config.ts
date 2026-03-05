@@ -17,7 +17,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  build: {
+  /* build: {
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -60,5 +60,5 @@ export default defineConfig({
         },
       },
     },
-  },
+  }, */
 });

@@ -1,7 +1,7 @@
 import type Parser from "rss-parser";
 import { isUrl } from "./utils";
 
-const CORSPROXY_BASE = "https://api.cors.lol/?url=";
+const CORSPROXY_BASE = "https://cors-anywhere.com/";
 
 type CustomFeed = object;
 
@@ -31,7 +31,7 @@ async function getParser(): Promise<Parser<CustomFeed, CustomItem>> {
 export type ParsedFeed = Awaited<ReturnType<typeof parseFeed>>;
 
 export async function parseFeed(url: string) {
-  const resp = await fetch(`${CORSPROXY_BASE}${encodeURIComponent(url)}`);
+  const resp = await fetch(`${CORSPROXY_BASE}${url}`);
   const text = await resp.text();
   const p = await getParser();
   const feed = await p.parseString(text);

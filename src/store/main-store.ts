@@ -9,6 +9,7 @@ const RSSSettingsSchema = z.object({
   explicitAvatars: z.record(z.hostname(), z.url()).default({}),
   bgUrl: z.url().optional(),
   showArticleArrow: z.boolean().default(true),
+  hiddenPostIds: z.array(z.string()).default([]),
 });
 
 type RSSSettings = z.infer<typeof RSSSettingsSchema>;
@@ -30,6 +31,7 @@ interface MainState {
   removeFeed: (feed: string) => void;
   addExplicitAvatar: (host: string, url: string) => void;
   removeExplicitAvatar: (host: string) => void;
+  addHiddenPostId: (id: string) => void;
 
   searchEngines: SearchEngine[];
   addSearchEngine: (engine: SearchEngine) => void;
@@ -43,6 +45,10 @@ interface MainState {
   addToSearchHistory: (query: string) => void;
   removeFromSearchHistory: (query: string) => void;
   clearSearchHistory: () => void;
+
+  readArticleIds: string[];
+  setArticleRead: (id: string) => void;
+  setArticleUnread: (id: string) => void;
 
   mode: "search" | "edit-feeds";
   setMode: (mode: "search" | "edit-feeds") => void;
@@ -85,73 +91,105 @@ function omit<T extends Record<string, unknown>, K extends keyof T>(
   return result as Omit<T, K>;
 }
 
+const parseRSS = (s: any) => RSSSettingsSchema.parse(s);
+const parseEngine = (e: SearchEngine) => SearchEngineSchema.parse(e);
+
 export const useMainStore = create<MainState>()(
   persist(
     (set) => ({
-      rssSettings: RSSSettingsSchema.parse({}),
+      rssSettings: parseRSS({}),
+
       updateRSSSettings: (settings: ChangeableSettings) =>
         set((state) => ({
-          rssSettings: {
+          rssSettings: parseRSS({
             ...state.rssSettings,
             ...settings,
-          },
+          }),
         })),
 
       addFeed: (feed: string) =>
         set((state) => ({
-          rssSettings: {
+          rssSettings: parseRSS({
             ...state.rssSettings,
             feeds: [...state.rssSettings.feeds, feed],
-          },
+          }),
         })),
+
       removeFeed: (feed: string) =>
         set((state) => ({
-          rssSettings: {
+          rssSettings: parseRSS({
             ...state.rssSettings,
             feeds: state.rssSettings.feeds.filter((f) => f !== feed),
-          },
+          }),
+        })),
+
+      addHiddenPostId: (id: string) =>
+        set((state) => ({
+          rssSettings: parseRSS({
+            ...state.rssSettings,
+            hiddenPostIds: [...state.rssSettings.hiddenPostIds, id],
+          }),
         })),
 
       addExplicitAvatar: (host: string, url: string) =>
         set((state) => ({
-          rssSettings: {
+          rssSettings: parseRSS({
             ...state.rssSettings,
-            explicitAvatars: { ...state.rssSettings.explicitAvatars, [host]: url },
-          },
+            explicitAvatars: {
+              ...state.rssSettings.explicitAvatars,
+              [host]: url,
+            },
+          }),
         })),
+
       removeExplicitAvatar: (host: string) =>
         set((state) => ({
-          rssSettings: {
+          rssSettings: parseRSS({
             ...state.rssSettings,
             explicitAvatars: omit(state.rssSettings.explicitAvatars, [host]),
-          },
+          }),
         })),
 
-      searchEngines: DEFAULT_SEARCH_ENGINES,
+      searchEngines: DEFAULT_SEARCH_ENGINES.map(parseEngine),
+      readArticleIds: [],
+      setArticleRead: (id: string) =>
+        set((state) => ({
+          readArticleIds: [...state.readArticleIds, id],
+        })),
+      setArticleUnread: (id: string) =>
+        set((state) => ({
+          readArticleIds: state.readArticleIds.filter((e) => e !== id),
+        })),
+
       addSearchEngine: (engine: SearchEngine) =>
         set((state) => ({
-          searchEngines: [...state.searchEngines, SearchEngineSchema.parse(engine)],
-        })),
-      removeSearchEngine: (engine: SearchEngine) =>
-        set((state) => ({
-          searchEngines: state.searchEngines.filter((e) => e !== engine),
+          searchEngines: [...state.searchEngines, parseEngine(engine)],
         })),
 
-      currentSearchEngine: DEFAULT_SEARCH_ENGINES[0],
+      removeSearchEngine: (engine: SearchEngine) =>
+        set((state) => ({
+          searchEngines: state.searchEngines.filter((e) => e !== engine).map(parseEngine),
+        })),
+
+      currentSearchEngine: parseEngine(DEFAULT_SEARCH_ENGINES[0]),
+
       setCurrentSearchEngine: (engine: SearchEngine) =>
         set(() => ({
-          currentSearchEngine: engine,
+          currentSearchEngine: parseEngine(engine),
         })),
+
       cycleSearchEngine: () =>
         set((state) => ({
-          currentSearchEngine:
+          currentSearchEngine: parseEngine(
             state.searchEngines[
               (state.searchEngines.indexOf(state.currentSearchEngine) + 1) %
                 state.searchEngines.length
             ],
+          ),
         })),
 
       searchHistory: [],
+
       addToSearchHistory: (query: string) =>
         set((state) => ({
           searchHistory: [query, ...state.searchHistory.filter((q) => q !== query)].slice(
@@ -159,17 +197,32 @@ export const useMainStore = create<MainState>()(
             10,
           ),
         })),
+
       removeFromSearchHistory: (query: string) =>
         set((state) => ({
           searchHistory: state.searchHistory.filter((q) => q !== query),
         })),
+
       clearSearchHistory: () => set({ searchHistory: [] }),
 
       mode: "search",
-      setMode: (mode: "search" | "edit-feeds") => set({ mode }),
+
+      setMode: (mode: "search" | "edit-feeds") =>
+        set({
+          mode,
+        }),
     }),
     {
       name: "storage",
+      merge: (persisted, current) => {
+        const p = persisted as any;
+
+        return {
+          ...current,
+          ...p,
+          rssSettings: RSSSettingsSchema.parse(p?.rssSettings ?? {}),
+        };
+      },
     },
   ),
 );

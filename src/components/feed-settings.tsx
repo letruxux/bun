@@ -119,7 +119,7 @@ export default function FeedSettings() {
         )}
         <div className="px-6 space-y-4">
           {settings.feeds.map((e) => (
-            <Card className="p-2">
+            <Card className="p-2" key={e}>
               <CardContent className="flex items-center px-2">
                 <img
                   alt={e}
@@ -146,7 +146,7 @@ export default function FeedSettings() {
           ))}
           <div className="border-b my-4" />
           {justTheExplicitAvatars.map((e) => (
-            <Card className="p-2 h-16">
+            <Card className="p-2 h-16" key={e.host}>
               <CardContent className="flex items-center px-2 h-full">
                 <img
                   alt={e.host}

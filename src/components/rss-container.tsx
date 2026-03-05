@@ -38,7 +38,7 @@ function Article({
 }: {
   item: Awaited<ReturnType<typeof parseFeed>>["items"][number];
 }) {
-  const { rssSettings: settings } = useMainStore();
+  const { rssSettings: settings, addHiddenPostId } = useMainStore();
   if (!item.url) {
     return null;
   }
@@ -95,7 +95,7 @@ function Article({
           </Card>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuItem>
+          <ContextMenuItem onClick={() => addHiddenPostId(item.superUniqueId)}>
             <HiOutlineEyeOff className="h-4 w-4 text-foreground" /> hide this post
           </ContextMenuItem>
           <ContextMenuItem variant="destructive">
@@ -115,13 +115,15 @@ export default function RSSContainer() {
   const sortedFeeds = useMemo(
     () =>
       dedupe(
-        feeds.sort(
-          (a, b) =>
-            new Date(b.pubDate ?? b.isoDate ?? new Date()).getTime() -
-            new Date(a.pubDate ?? a.isoDate ?? new Date()).getTime(),
-        ),
+        feeds
+          .sort(
+            (a, b) =>
+              new Date(b.pubDate ?? b.isoDate ?? new Date()).getTime() -
+              new Date(a.pubDate ?? a.isoDate ?? new Date()).getTime(),
+          )
+          .filter((e) => !settings.hiddenPostIds.includes(e.superUniqueId)),
       ),
-    [feeds],
+    [feeds, settings.hiddenPostIds],
   );
 
   return (
