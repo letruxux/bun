@@ -245,6 +245,7 @@ export const useMainStore = create<MainState>()(
 				return {
 					...current,
 					...p,
+					mode: "search",
 					rssSettings: RSSSettingsSchema.parse(p?.rssSettings ?? {}),
 				};
 			},

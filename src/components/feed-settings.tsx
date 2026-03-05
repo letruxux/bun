@@ -1,135 +1,18 @@
 "use client";
 
-import { ImageWeserv } from "@letruxux/weserv-js";
 import { useMemo, useState } from "react";
-import {
-	HiOutlineLink,
-	HiOutlineTrash,
-	HiPencilAlt,
-	HiPlus,
-} from "react-icons/hi";
-import { isUrl, urlToImg } from "@/lib/utils";
-import { type Feed, useMainStore } from "@/store/main-store";
+import { HiPlus } from "react-icons/hi";
+import { isUrl } from "@/lib/utils";
+import { useMainStore } from "@/store/main-store";
+import { ExplicitAvatarItem, FeedItem } from "./feed-item";
 import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
+import { Card } from "./ui/card";
 import { Checkbox } from "./ui/checkbox";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
-/* type Article = ParsedFeed["items"][number]; */
-
-function FeedEditDialog({ feed }: { feed: Feed }) {
-	const { updateFeed } = useMainStore();
-	const [color, setColor] = useState(feed.color || "#3b82f6");
-	const [useCorsProxy, setUseCorsProxy] = useState(feed.useCorsProxy);
-	const [customExpression, setCustomExpression] = useState(
-		feed.customExpression || "",
-	);
-	const [open, setOpen] = useState(false);
-
-	const handleSave = () => {
-		updateFeed(feed.url, {
-			color,
-			useCorsProxy,
-			customExpression: customExpression || undefined,
-		});
-		setOpen(false);
-	};
-
-	return (
-		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				<Button size="icon-sm" variant="ghost" className="mr-1">
-					<HiPencilAlt className="h-4 w-4" />
-				</Button>
-			</DialogTrigger>
-			<DialogContent className="max-w-md">
-				<DialogHeader>
-					<DialogTitle>Edit Feed</DialogTitle>
-				</DialogHeader>
-				<div className="space-y-4 py-4">
-					<div>
-						<Label className="mb-2 text-md gap-0">color</Label>
-						<Input
-							type="color"
-							className="h-10 p-1 cursor-pointer"
-							value={color}
-							onChange={(e) => setColor(e.target.value)}
-						/>
-					</div>
-					<div className="flex items-center">
-						<Checkbox
-							checked={useCorsProxy}
-							onClick={() => setUseCorsProxy(!useCorsProxy)}
-						/>
-						<Label className="ml-2">use cors proxy</Label>
-					</div>
-					<div>
-						<Label className="mb-2 text-md gap-0">custom expression</Label>
-						<Input
-							type="text"
-							placeholder="e.g. item.title = item.title.replace(/foo/gi, 'bar')"
-							value={customExpression}
-							onChange={(e) => setCustomExpression(e.target.value)}
-						/>
-						<p className="text-xs text-muted-foreground mt-1">
-							change it how you want, type is as follows:
-							<br />
-							<pre>{`type Article = {
-    imageUrl?: string;
-    url?: string;
-    superUniqueId: string;
-    mediaContent?: {
-        $: {
-            url: string;
-            medium?: string;
-        };
-    }[];
-    link?: string;
-    guid?: string;
-    title?: string;
-    pubDate?: string;
-    creator?: string;
-    summary?: string;
-    content?: string;
-    isoDate?: string;
-    categories?: string[];
-    contentSnippet?: string;
-    enclosure?: {
-        url: string;
-        length?: number;
-        type?: string;
-    };
-}`}</pre>
-						</p>
-					</div>
-					<div className="flex justify-end gap-2">
-						<Button variant="outline" onClick={() => setOpen(false)}>
-							cancel
-						</Button>
-						<Button onClick={handleSave}>save</Button>
-					</div>
-				</div>
-			</DialogContent>
-		</Dialog>
-	);
-}
-
 export default function FeedSettings() {
-	const {
-		rssSettings: settings,
-		addFeed,
-		removeFeed,
-		addExplicitAvatar,
-		removeExplicitAvatar,
-	} = useMainStore();
+	const { rssSettings: settings, addFeed, addExplicitAvatar } = useMainStore();
 	const [isAddingFeed, setIsAddingFeed] = useState(false);
 
 	const [newFeedUrl, setNewFeedUrl] = useState("");
@@ -304,73 +187,20 @@ export default function FeedSettings() {
 				)}
 				<div className="px-6 space-y-4">
 					{settings.feeds.map((feed) => (
-						<Card className="p-2" key={feed.url}>
-							<CardContent className="flex items-center px-2">
-								<div
-									className="h-8 w-8 rounded-full mr-2 flex items-center justify-center"
-									style={{ backgroundColor: feed.color || "#3b82f6" }}
-								>
-									<img
-										alt={feed.url}
-										className="size-full rounded-full"
-										src={new ImageWeserv(
-											urlToImg(feed.url, settings.explicitAvatars),
-										)
-											.setWidth(40)
-											.setHeight(40)
-											.toString()}
-									/>
-								</div>
-								<code className="text-xs">{feed.url}</code>
-								{feed.customExpression && (
-									<span className="ml-2 text-xs text-muted-foreground">
-										*expr*
-									</span>
-								)}
-								<div className="grow"></div>
-								<FeedEditDialog feed={feed} />
-								<Button
-									size="icon-sm"
-									variant="outline"
-									onClick={() => {
-										removeExplicitAvatar(new URL(feed.url).host);
-										removeFeed(feed.url);
-									}}
-								>
-									<HiOutlineTrash className="h-4 w-4" />
-								</Button>
-							</CardContent>
-						</Card>
+						<FeedItem
+							key={feed.url}
+							feed={feed}
+							explicitAvatars={settings.explicitAvatars}
+						/>
 					))}
 					<div className="border-b my-4" />
 					{justTheExplicitAvatars.map((e) => (
-						<Card className="p-2 h-16" key={e.host}>
-							<CardContent className="flex items-center px-2 h-full">
-								<img
-									alt={e.host}
-									className="h-12 w-12 rounded-lg border mr-2"
-									src={new ImageWeserv(
-										urlToImg(e.url, settings.explicitAvatars),
-									)
-										.setWidth(40)
-										.setHeight(40)
-										.toString()}
-								/>
-								<span>
-									custom avatar for <code>{e.host}</code>
-								</span>
-								<div className="grow"></div>
-								<Button
-									size="icon-sm"
-									variant="outline"
-									onClick={() => {
-										removeExplicitAvatar(e.host);
-									}}
-								>
-									<HiOutlineLink className="h-4 w-4" />
-								</Button>
-							</CardContent>
-						</Card>
+						<ExplicitAvatarItem
+							key={e.host}
+							host={e.host}
+							url={e.url}
+							explicitAvatars={settings.explicitAvatars}
+						/>
 					))}
 				</div>
 			</Card>
